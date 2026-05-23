@@ -1,0 +1,140 @@
+/* Custom CSS styling for Todo.txt integration */
+
+/* 1. Sleek Control Panel Modal */
+.todo-modal-title {
+  font-family: var(--font-interface);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-normal);
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 5px;
+  letter-spacing: -0.015em;
+}
+
+.todo-modal-subtitle {
+  font-family: var(--font-interface);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.todo-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.todo-action-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 10px;
+}
+
+.todo-action-wrapper:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.todo-action-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--background-secondary-alt);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.todo-action-btn:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px var(--background-modifier-border-hover);
+}
+
+.todo-action-btn:active {
+  transform: translateY(0);
+}
+
+.todo-btn-icon {
+  font-size: 1.3rem;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.todo-action-btn:hover .todo-btn-icon {
+  transform: scale(1.1);
+}
+
+.todo-btn-text {
+  font-family: var(--font-interface);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.todo-action-desc {
+  font-family: var(--font-interface);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding-left: 36px;
+  line-height: 1.35;
+}
+
+/* 2. Sleek Settings Panel Inputs */
+.setting-instructions-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+}
+
+.todo-color-picker-input {
+  width: 36px;
+  height: 28px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-right: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease;
+}
+
+.todo-color-picker-input:hover {
+  border-color: var(--interactive-accent);
+}
+
+.todo-color-hex-input {
+  width: 80px;
+  height: 28px;
+  font-family: var(--font-monospace);
+  font-size: 0.8rem;
+  text-align: center;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  vertical-align: middle;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  transition: border-color 0.15s ease;
+}
+
+.todo-color-hex-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
