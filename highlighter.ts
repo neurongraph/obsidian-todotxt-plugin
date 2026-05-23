@@ -33,15 +33,17 @@ export function createTodoHighlighterPlugin(plugin: any) {
         if (!plugin.isTargetFile(activeFile.path)) return builder.finish();
 
         const settings = plugin.settings;
-        const priorityColor = settings.priorityColor || "#d93f3f";
+        const priorityColor = settings.priorityColor || "#c17171";
         const dueDateColor = settings.dueDateColor || "#e28743";
-        const projectColor = settings.projectColor || "#2b7a78";
-        const contextColor = settings.contextColor || "#3a6073";
+        const overdueDateColor = settings.overdueDateColor || "#ff3b30";
+        const projectColor = settings.projectColor || "#5c91e6";
+        const contextColor = settings.contextColor || "#6a8390";
         const recColor = settings.recColor || "#8a3ab9";
 
         // Create the style decorations
         const priorityDeco = Decoration.mark({ attributes: { style: `color: ${priorityColor}; font-weight: bold;` } });
         const dueDeco = Decoration.mark({ attributes: { style: `color: ${dueDateColor}; font-weight: bold;` } });
+        const overdueDeco = Decoration.mark({ attributes: { style: `color: ${overdueDateColor}; font-weight: bold;` } });
         const projectDeco = Decoration.mark({ attributes: { style: `color: ${projectColor}; font-weight: 500;` } });
         const contextDeco = Decoration.mark({ attributes: { style: `color: ${contextColor}; font-weight: 500;` } });
         const recDeco = Decoration.mark({ attributes: { style: `color: ${recColor}; font-style: italic;` } });
@@ -85,10 +87,21 @@ export function createTodoHighlighterPlugin(plugin: any) {
               // B. Due date matching: \bdue:\d{4}-\d{2}-\d{2}\b
               const dueRegex = /\bdue:\d{4}-\d{2}-\d{2}\b/g;
               while ((match = dueRegex.exec(lineText)) !== null) {
+                const dueText = match[0];
+                const dateVal = dueText.substring(4);
+                
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const todayStr = `${yyyy}-${mm}-${dd}`;
+                
+                const isOverdue = dateVal <= todayStr;
+
                 matches.push({
                   start: line.from + match.index,
                   end: line.from + match.index + match[0].length,
-                  deco: dueDeco
+                  deco: isOverdue ? overdueDeco : dueDeco
                 });
               }
 
@@ -166,10 +179,11 @@ export function createTodoPostProcessor(plugin: any) {
       return; // Skip token highlighting for completed lines
     }
 
-    const priorityColor = settings.priorityColor || "#d93f3f";
+    const priorityColor = settings.priorityColor || "#c17171";
     const dueDateColor = settings.dueDateColor || "#e28743";
-    const projectColor = settings.projectColor || "#2b7a78";
-    const contextColor = settings.contextColor || "#3a6073";
+    const overdueDateColor = settings.overdueDateColor || "#ff3b30";
+    const projectColor = settings.projectColor || "#5c91e6";
+    const contextColor = settings.contextColor || "#6a8390";
     const recColor = settings.recColor || "#8a3ab9";
 
     // Recursive helper to traverse DOM nodes and color text nodes
@@ -195,8 +209,16 @@ export function createTodoPostProcessor(plugin: any) {
             fragment.appendChild(span);
             hasMatches = true;
           } else if (/^due:\d{4}-\d{2}-\d{2}$/.test(token)) {
+            const dateVal = token.substring(4);
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+            const isOverdue = dateVal <= todayStr;
+
             const span = document.createElement("span");
-            span.style.color = dueDateColor;
+            span.style.color = isOverdue ? overdueDateColor : dueDateColor;
             span.style.fontWeight = "bold";
             span.textContent = token;
             fragment.appendChild(span);

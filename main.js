@@ -255,13 +255,15 @@ function createTodoHighlighterPlugin(plugin) {
         if (!plugin.isTargetFile(activeFile.path))
           return builder.finish();
         const settings = plugin.settings;
-        const priorityColor = settings.priorityColor || "#d93f3f";
+        const priorityColor = settings.priorityColor || "#c17171";
         const dueDateColor = settings.dueDateColor || "#e28743";
-        const projectColor = settings.projectColor || "#2b7a78";
-        const contextColor = settings.contextColor || "#3a6073";
+        const overdueDateColor = settings.overdueDateColor || "#ff3b30";
+        const projectColor = settings.projectColor || "#5c91e6";
+        const contextColor = settings.contextColor || "#6a8390";
         const recColor = settings.recColor || "#8a3ab9";
         const priorityDeco = import_view.Decoration.mark({ attributes: { style: `color: ${priorityColor}; font-weight: bold;` } });
         const dueDeco = import_view.Decoration.mark({ attributes: { style: `color: ${dueDateColor}; font-weight: bold;` } });
+        const overdueDeco = import_view.Decoration.mark({ attributes: { style: `color: ${overdueDateColor}; font-weight: bold;` } });
         const projectDeco = import_view.Decoration.mark({ attributes: { style: `color: ${projectColor}; font-weight: 500;` } });
         const contextDeco = import_view.Decoration.mark({ attributes: { style: `color: ${contextColor}; font-weight: 500;` } });
         const recDeco = import_view.Decoration.mark({ attributes: { style: `color: ${recColor}; font-style: italic;` } });
@@ -294,10 +296,18 @@ function createTodoHighlighterPlugin(plugin) {
               }
               const dueRegex = /\bdue:\d{4}-\d{2}-\d{2}\b/g;
               while ((match = dueRegex.exec(lineText)) !== null) {
+                const dueText = match[0];
+                const dateVal = dueText.substring(4);
+                const today = /* @__PURE__ */ new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, "0");
+                const dd = String(today.getDate()).padStart(2, "0");
+                const todayStr = `${yyyy}-${mm}-${dd}`;
+                const isOverdue = dateVal <= todayStr;
                 matches.push({
                   start: line.from + match.index,
                   end: line.from + match.index + match[0].length,
-                  deco: dueDeco
+                  deco: isOverdue ? overdueDeco : dueDeco
                 });
               }
               const projectRegex = /(\s|^)(\+[a-zA-Z0-9_-]+)/g;
@@ -354,10 +364,11 @@ function createTodoPostProcessor(plugin) {
       el.style.opacity = "0.6";
       return;
     }
-    const priorityColor = settings.priorityColor || "#d93f3f";
+    const priorityColor = settings.priorityColor || "#c17171";
     const dueDateColor = settings.dueDateColor || "#e28743";
-    const projectColor = settings.projectColor || "#2b7a78";
-    const contextColor = settings.contextColor || "#3a6073";
+    const overdueDateColor = settings.overdueDateColor || "#ff3b30";
+    const projectColor = settings.projectColor || "#5c91e6";
+    const contextColor = settings.contextColor || "#6a8390";
     const recColor = settings.recColor || "#8a3ab9";
     const highlightElementText = (node) => {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -378,8 +389,15 @@ function createTodoPostProcessor(plugin) {
             fragment.appendChild(span);
             hasMatches = true;
           } else if (/^due:\d{4}-\d{2}-\d{2}$/.test(token)) {
+            const dateVal = token.substring(4);
+            const today = /* @__PURE__ */ new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+            const isOverdue = dateVal <= todayStr;
             const span = document.createElement("span");
-            span.style.color = dueDateColor;
+            span.style.color = isOverdue ? overdueDateColor : dueDateColor;
             span.style.fontWeight = "bold";
             span.textContent = token;
             fragment.appendChild(span);
@@ -428,13 +446,15 @@ var DEFAULT_SETTINGS = {
   todoPath: "todo.md",
   additionalPaths: "",
   archivePath: "completed_todo.md",
-  priorityColor: "#d93f3f",
-  // Beautiful standard red
+  priorityColor: "#c17171",
+  // Soft rose/red
   dueDateColor: "#e28743",
   // Sleek vibrant orange
-  projectColor: "#2b7a78",
-  // Modern premium teal
-  contextColor: "#3a6073",
+  overdueDateColor: "#ff3b30",
+  // Vibrant warning red
+  projectColor: "#5c91e6",
+  // Modern premium blue
+  contextColor: "#6a8390",
   // Professional blue-gray
   recColor: "#8a3ab9"
   // Vibrant recurrence purple
@@ -896,6 +916,7 @@ var TodoSettingTab = class extends import_obsidian.PluginSettingTab {
     };
     createColorPickerSetting("Priority Color", "Color for priorities (e.g. (A), (B))", "priorityColor");
     createColorPickerSetting("Due Date Color", "Color for due dates (e.g. due:2026-05-24)", "dueDateColor");
+    createColorPickerSetting("Overdue / Due Today Color", "Color for overdue or due today tasks (e.g. due:2026-05-23)", "overdueDateColor");
     createColorPickerSetting("Project Color", "Color for projects (e.g. +ProjectName)", "projectColor");
     createColorPickerSetting("Context Color", "Color for contexts (e.g. @contextName)", "contextColor");
     createColorPickerSetting("Recurrence Color", "Color for recurrence tags (e.g. rec:1w)", "recColor");

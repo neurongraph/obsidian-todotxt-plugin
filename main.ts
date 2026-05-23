@@ -29,6 +29,7 @@ interface TodoSettings {
   archivePath: string;
   priorityColor: string;
   dueDateColor: string;
+  overdueDateColor: string;
   projectColor: string;
   contextColor: string;
   recColor: string;
@@ -38,10 +39,11 @@ const DEFAULT_SETTINGS: TodoSettings = {
   todoPath: "todo.md",
   additionalPaths: "",
   archivePath: "completed_todo.md",
-  priorityColor: "#d93f3f", // Beautiful standard red
+  priorityColor: "#c17171", // Soft rose/red
   dueDateColor: "#e28743",  // Sleek vibrant orange
-  projectColor: "#2b7a78",  // Modern premium teal
-  contextColor: "#3a6073",  // Professional blue-gray
+  overdueDateColor: "#ff3b30", // Vibrant warning red
+  projectColor: "#5c91e6",  // Modern premium blue
+  contextColor: "#6a8390",  // Professional blue-gray
   recColor: "#8a3ab9"       // Vibrant recurrence purple
 };
 
@@ -664,6 +666,7 @@ class TodoSettingTab extends PluginSettingTab {
 
     createColorPickerSetting("Priority Color", "Color for priorities (e.g. (A), (B))", "priorityColor");
     createColorPickerSetting("Due Date Color", "Color for due dates (e.g. due:2026-05-24)", "dueDateColor");
+    createColorPickerSetting("Overdue / Due Today Color", "Color for overdue or due today tasks (e.g. due:2026-05-23)", "overdueDateColor");
     createColorPickerSetting("Project Color", "Color for projects (e.g. +ProjectName)", "projectColor");
     createColorPickerSetting("Context Color", "Color for contexts (e.g. @contextName)", "contextColor");
     createColorPickerSetting("Recurrence Color", "Color for recurrence tags (e.g. rec:1w)", "recColor");
