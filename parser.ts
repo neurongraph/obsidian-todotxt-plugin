@@ -242,6 +242,40 @@ export function sortTasksByPriority(tasks: TodoTask[]): TodoTask[] {
 }
 
 /**
+ * Extracts all unique contexts from file content.
+ */
+export function extractContexts(content: string): string[] {
+  const contextSet = new Set<string>();
+  const lines = content.split(/\r?\n/);
+
+  for (const line of lines) {
+    const task = parseTodoLine(line);
+    for (const ctx of task.contexts) {
+      contextSet.add(ctx);
+    }
+  }
+
+  return Array.from(contextSet).sort();
+}
+
+/**
+ * Extracts all unique projects from file content.
+ */
+export function extractProjects(content: string): string[] {
+  const projectSet = new Set<string>();
+  const lines = content.split(/\r?\n/);
+
+  for (const line of lines) {
+    const task = parseTodoLine(line);
+    for (const proj of task.projects) {
+      projectSet.add(proj);
+    }
+  }
+
+  return Array.from(projectSet).sort();
+}
+
+/**
  * Groups all tasks in a two-level hierarchy (Context -> Project), sorts them within
  * each project, and returns the formatted markdown file content.
  * Preserves 3 empty lines at the very top of the file for the user's quick-entry inbox!

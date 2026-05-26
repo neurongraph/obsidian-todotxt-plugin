@@ -190,6 +190,28 @@ function sortTasksByPriority(tasks) {
     return a.description.localeCompare(b.description);
   });
 }
+function extractContexts(content) {
+  const contextSet = /* @__PURE__ */ new Set();
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const task = parseTodoLine(line);
+    for (const ctx of task.contexts) {
+      contextSet.add(ctx);
+    }
+  }
+  return Array.from(contextSet).sort();
+}
+function extractProjects(content) {
+  const projectSet = /* @__PURE__ */ new Set();
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const task = parseTodoLine(line);
+    for (const proj of task.projects) {
+      projectSet.add(proj);
+    }
+  }
+  return Array.from(projectSet).sort();
+}
 function groupAndSortTasks(tasks, sortBy) {
   const groups = {};
   for (const task of tasks) {
@@ -236,6 +258,39 @@ function groupAndSortTasks(tasks, sortBy) {
 // highlighter.ts
 var import_view = require("@codemirror/view");
 var import_state = require("@codemirror/state");
+var import_autocomplete = require("@codemirror/autocomplete");
+
+// autocomplete.ts
+function createTodoCompletionSource(getFileContent) {
+  return (context) => {
+    const word = context.matchBefore(/[@+]\w*/);
+    if (!word)
+      return null;
+    const text = word.text;
+    const isContext = text.startsWith("@");
+    const isProject = text.startsWith("+");
+    if (!isContext && !isProject)
+      return null;
+    const filterPrefix = text.slice(1).toLowerCase();
+    const fileContent = getFileContent();
+    const items = isContext ? extractContexts(fileContent) : extractProjects(fileContent);
+    const completions = items.filter((item) => item.toLowerCase().startsWith(filterPrefix)).map((item) => ({
+      label: item,
+      detail: isContext ? "context" : "project",
+      // Complete to the full tag (e.g., "@context")
+      apply: isContext ? `@${item}` : `+${item}`,
+      type: "variable"
+    }));
+    if (completions.length === 0)
+      return null;
+    return {
+      from: word.from,
+      options: completions
+    };
+  };
+}
+
+// highlighter.ts
 function createTodoHighlighterPlugin(plugin) {
   return import_view.ViewPlugin.fromClass(
     class {
@@ -351,6 +406,16 @@ function createTodoHighlighterPlugin(plugin) {
       decorations: (v) => v.decorations
     }
   );
+}
+function createTodoAutocompleteExtension(plugin) {
+  const completionSource = (context) => {
+    const content = context.state.doc.toString();
+    const source = createTodoCompletionSource(() => content);
+    return source(context);
+  };
+  return (0, import_autocomplete.autocompletion)({
+    override: [completionSource]
+  });
 }
 function createTodoPostProcessor(plugin) {
   return (el, ctx) => {
@@ -468,6 +533,7 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerEditorExtension(createTodoHighlighterPlugin(this));
+    this.registerEditorExtension(createTodoAutocompleteExtension(this));
     this.registerMarkdownPostProcessor(createTodoPostProcessor(this));
     this.addRibbonIcon("list-checks", "Todo.txt Control Panel", () => {
       new TodoControlPanelModal(this.app, this).open();
@@ -750,9 +816,18 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
     }
     const content = await this.app.vault.read(file);
     const lines = content.split(/\r?\n/);
+    let inboxLines = 0;
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+      if (lines[i].trim().length === 0) {
+        inboxLines++;
+      } else {
+        break;
+      }
+    }
     const uncompletedTasks = [];
     const completedTasks = [];
-    for (const line of lines) {
+    for (let i = inboxLines; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
       if (trimmed.length === 0)
         continue;
@@ -779,14 +854,19 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
       if (archiveFile instanceof import_obsidian.TFile) {
         archiveContent = await this.app.vault.read(archiveFile);
       }
-      const separator = archiveContent.length > 0 ? "\n" : "";
-      const updatedArchiveContent = archiveContent + separator + completedTasks.join("\n");
+      let updatedArchiveContent;
+      if (archiveContent.length > 0) {
+        updatedArchiveContent = archiveContent + "\n\n---\n\n" + completedTasks.join("\n");
+      } else {
+        updatedArchiveContent = completedTasks.join("\n");
+      }
       if (archiveFile instanceof import_obsidian.TFile) {
         await this.app.vault.modify(archiveFile, updatedArchiveContent);
       } else {
         await this.app.vault.create(archivePath, updatedArchiveContent);
       }
-      const updatedActiveContent = uncompletedTasks.join("\n");
+      const inboxPrefix = "\n\n\n";
+      const updatedActiveContent = inboxPrefix + uncompletedTasks.join("\n");
       await this.app.vault.modify(file, updatedActiveContent);
       this.fileCache[file.path] = uncompletedTasks;
       new import_obsidian.Notice(`Archived ${completedTasks.length} task(s) to ${archivePath}!`);

@@ -1,6 +1,8 @@
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
+import { autocompletion } from "@codemirror/autocomplete";
 import { MarkdownPostProcessorContext } from "obsidian";
+import { createTodoCompletionSource } from "./autocomplete";
 
 /**
  * Creates a CodeMirror 6 ViewPlugin to provide live syntax highlighting in
@@ -157,6 +159,24 @@ export function createTodoHighlighterPlugin(plugin: any) {
       decorations: (v) => v.decorations,
     }
   );
+}
+
+/**
+ * Creates a CodeMirror 6 autocomplete extension for contexts (@) and projects (+).
+ */
+export function createTodoAutocompleteExtension(plugin: any) {
+  const completionSource = (context: any) => {
+    // Get the current file content from the editor state
+    const content = context.state.doc.toString();
+
+    // Create the completion source with the current file content
+    const source = createTodoCompletionSource(() => content);
+    return source(context);
+  };
+
+  return autocompletion({
+    override: [completionSource]
+  });
 }
 
 /**

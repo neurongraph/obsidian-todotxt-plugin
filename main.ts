@@ -20,6 +20,7 @@ import {
 } from "./parser";
 import {
   createTodoHighlighterPlugin,
+  createTodoAutocompleteExtension,
   createTodoPostProcessor
 } from "./highlighter";
 
@@ -57,6 +58,9 @@ export default class TodoTxtPlugin extends Plugin {
 
     // 1. Register CodeMirror 6 syntax highlighter
     this.registerEditorExtension(createTodoHighlighterPlugin(this));
+
+    // 1b. Register CodeMirror 6 autocomplete extension
+    this.registerEditorExtension(createTodoAutocompleteExtension(this));
 
     // 2. Register Reading View Markdown Post-Processor
     this.registerMarkdownPostProcessor(createTodoPostProcessor(this));
@@ -431,14 +435,25 @@ export default class TodoTxtPlugin extends Plugin {
 
     const content = await this.app.vault.read(file);
     const lines = content.split(/\r?\n/);
-    
+
+    // Preserve the 3 blank lines at the top for inbox
+    let inboxLines = 0;
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+      if (lines[i].trim().length === 0) {
+        inboxLines++;
+      } else {
+        break;
+      }
+    }
+
     const uncompletedTasks: string[] = [];
     const completedTasks: string[] = [];
 
-    for (const line of lines) {
+    for (let i = inboxLines; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
       if (trimmed.length === 0) continue;
-      
+
       // If it is a header or divider, keep it in the active file
       if (trimmed.startsWith("#") || trimmed === "---") {
         uncompletedTasks.push(line);
@@ -461,7 +476,7 @@ export default class TodoTxtPlugin extends Plugin {
     // Append to archive file
     const archivePath = this.settings.archivePath || "completed_todo.md";
     let archiveFile = this.app.vault.getAbstractFileByPath(archivePath);
-    
+
     this.isWritingFile = true;
     try {
       let archiveContent = "";
@@ -469,17 +484,22 @@ export default class TodoTxtPlugin extends Plugin {
         archiveContent = await this.app.vault.read(archiveFile);
       }
 
-      const separator = archiveContent.length > 0 ? "\n" : "";
-      const updatedArchiveContent = archiveContent + separator + completedTasks.join("\n");
-      
+      let updatedArchiveContent: string;
+      if (archiveContent.length > 0) {
+        updatedArchiveContent = archiveContent + "\n\n---\n\n" + completedTasks.join("\n");
+      } else {
+        updatedArchiveContent = completedTasks.join("\n");
+      }
+
       if (archiveFile instanceof TFile) {
         await this.app.vault.modify(archiveFile, updatedArchiveContent);
       } else {
         await this.app.vault.create(archivePath, updatedArchiveContent);
       }
 
-      // Write remaining back to active file
-      const updatedActiveContent = uncompletedTasks.join("\n");
+      // Write remaining back to active file with 3 blank lines at the top
+      const inboxPrefix = "\n\n\n";
+      const updatedActiveContent = inboxPrefix + uncompletedTasks.join("\n");
       await this.app.vault.modify(file, updatedActiveContent);
       this.fileCache[file.path] = uncompletedTasks;
 
