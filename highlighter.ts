@@ -168,7 +168,15 @@ export function createTodoAutocompleteExtension(plugin: any) {
   const completionSource = (context: any) => {
     // Only provide completions for target todo files
     const activeFile = plugin.app.workspace.getActiveFile();
-    if (!activeFile || !plugin.isTargetFile(activeFile.path)) {
+
+    if (!activeFile) {
+      console.log("[TodoAutocomplete] No active file");
+      return null;
+    }
+
+    const isTarget = plugin.isTargetFile(activeFile.path);
+    if (!isTarget) {
+      console.log(`[TodoAutocomplete] File not a target: ${activeFile.path}, configured: ${plugin.settings.todoPath}`);
       return null;
     }
 
@@ -177,7 +185,13 @@ export function createTodoAutocompleteExtension(plugin: any) {
 
     // Create the completion source with the current file content
     const source = createTodoCompletionSource(() => content);
-    return source(context);
+    const result = source(context);
+
+    if (result) {
+      console.log(`[TodoAutocomplete] Showing ${result.options?.length || 0} completions`);
+    }
+
+    return result;
   };
 
   return autocompletion({

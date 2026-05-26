@@ -410,12 +410,22 @@ function createTodoHighlighterPlugin(plugin) {
 function createTodoAutocompleteExtension(plugin) {
   const completionSource = (context) => {
     const activeFile = plugin.app.workspace.getActiveFile();
-    if (!activeFile || !plugin.isTargetFile(activeFile.path)) {
+    if (!activeFile) {
+      console.log("[TodoAutocomplete] No active file");
+      return null;
+    }
+    const isTarget = plugin.isTargetFile(activeFile.path);
+    if (!isTarget) {
+      console.log(`[TodoAutocomplete] File not a target: ${activeFile.path}, configured: ${plugin.settings.todoPath}`);
       return null;
     }
     const content = context.state.doc.toString();
     const source = createTodoCompletionSource(() => content);
-    return source(context);
+    const result = source(context);
+    if (result) {
+      console.log(`[TodoAutocomplete] Showing ${result.options?.length || 0} completions`);
+    }
+    return result;
   };
   return (0, import_autocomplete.autocompletion)({
     override: [completionSource]
