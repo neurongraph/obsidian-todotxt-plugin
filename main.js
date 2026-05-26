@@ -409,6 +409,10 @@ function createTodoHighlighterPlugin(plugin) {
 }
 function createTodoAutocompleteExtension(plugin) {
   const completionSource = (context) => {
+    const activeFile = plugin.app.workspace.getActiveFile();
+    if (!activeFile || !plugin.isTargetFile(activeFile.path)) {
+      return null;
+    }
     const content = context.state.doc.toString();
     const source = createTodoCompletionSource(() => content);
     return source(context);

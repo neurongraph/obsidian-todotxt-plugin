@@ -166,6 +166,12 @@ export function createTodoHighlighterPlugin(plugin: any) {
  */
 export function createTodoAutocompleteExtension(plugin: any) {
   const completionSource = (context: any) => {
+    // Only provide completions for target todo files
+    const activeFile = plugin.app.workspace.getActiveFile();
+    if (!activeFile || !plugin.isTargetFile(activeFile.path)) {
+      return null;
+    }
+
     // Get the current file content from the editor state
     const content = context.state.doc.toString();
 
