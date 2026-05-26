@@ -190,28 +190,6 @@ function sortTasksByPriority(tasks) {
     return a.description.localeCompare(b.description);
   });
 }
-function extractContexts(content) {
-  const contextSet = /* @__PURE__ */ new Set();
-  const lines = content.split(/\r?\n/);
-  for (const line of lines) {
-    const task = parseTodoLine(line);
-    for (const ctx of task.contexts) {
-      contextSet.add(ctx);
-    }
-  }
-  return Array.from(contextSet).sort();
-}
-function extractProjects(content) {
-  const projectSet = /* @__PURE__ */ new Set();
-  const lines = content.split(/\r?\n/);
-  for (const line of lines) {
-    const task = parseTodoLine(line);
-    for (const proj of task.projects) {
-      projectSet.add(proj);
-    }
-  }
-  return Array.from(projectSet).sort();
-}
 function groupAndSortTasks(tasks, sortBy) {
   const groups = {};
   for (const task of tasks) {
@@ -259,38 +237,6 @@ function groupAndSortTasks(tasks, sortBy) {
 var import_view = require("@codemirror/view");
 var import_state = require("@codemirror/state");
 var import_autocomplete = require("@codemirror/autocomplete");
-
-// autocomplete.ts
-function createTodoCompletionSource(getFileContent) {
-  return (context) => {
-    const word = context.matchBefore(/[@+]\w*/);
-    if (!word)
-      return null;
-    const text = word.text;
-    const isContext = text.startsWith("@");
-    const isProject = text.startsWith("+");
-    if (!isContext && !isProject)
-      return null;
-    const filterPrefix = text.slice(1).toLowerCase();
-    const fileContent = getFileContent();
-    const items = isContext ? extractContexts(fileContent) : extractProjects(fileContent);
-    const completions = items.filter((item) => item.toLowerCase().startsWith(filterPrefix)).map((item) => ({
-      label: item,
-      detail: isContext ? "context" : "project",
-      // Complete to the full tag (e.g., "@context")
-      apply: isContext ? `@${item}` : `+${item}`,
-      type: "variable"
-    }));
-    if (completions.length === 0)
-      return null;
-    return {
-      from: word.from,
-      options: completions
-    };
-  };
-}
-
-// highlighter.ts
 function createTodoHighlighterPlugin(plugin) {
   return import_view.ViewPlugin.fromClass(
     class {
@@ -406,30 +352,6 @@ function createTodoHighlighterPlugin(plugin) {
       decorations: (v) => v.decorations
     }
   );
-}
-function createTodoAutocompleteExtension(plugin) {
-  const completionSource = (context) => {
-    const activeFile = plugin.app.workspace.getActiveFile();
-    if (!activeFile) {
-      console.log("[TodoAutocomplete] No active file");
-      return null;
-    }
-    const isTarget = plugin.isTargetFile(activeFile.path);
-    if (!isTarget) {
-      console.log(`[TodoAutocomplete] File not a target: ${activeFile.path}, configured: ${plugin.settings.todoPath}`);
-      return null;
-    }
-    const content = context.state.doc.toString();
-    const source = createTodoCompletionSource(() => content);
-    const result = source(context);
-    if (result) {
-      console.log(`[TodoAutocomplete] Showing ${result.options?.length || 0} completions`);
-    }
-    return result;
-  };
-  return (0, import_autocomplete.autocompletion)({
-    override: [completionSource]
-  });
 }
 function createTodoPostProcessor(plugin) {
   return (el, ctx) => {
@@ -547,7 +469,6 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerEditorExtension(createTodoHighlighterPlugin(this));
-    this.registerEditorExtension(createTodoAutocompleteExtension(this));
     this.registerMarkdownPostProcessor(createTodoPostProcessor(this));
     this.addRibbonIcon("list-checks", "Todo.txt Control Panel", () => {
       new TodoControlPanelModal(this.app, this).open();
