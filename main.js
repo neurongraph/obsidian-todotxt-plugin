@@ -427,11 +427,13 @@ function createTodoAutocompleteExtension(plugin) {
     }
     return result;
   };
-  return (0, import_autocomplete.autocompletion)({
-    override: [completionSource],
-    activateOnTyping: true,
-    closeOnBlur: true
-  });
+  return [
+    (0, import_autocomplete.autocompletion)({
+      override: [completionSource],
+      activateOnTyping: true
+    }),
+    import_autocomplete.completionKeymap
+  ];
 }
 function createTodoPostProcessor(plugin) {
   return (el, ctx) => {
