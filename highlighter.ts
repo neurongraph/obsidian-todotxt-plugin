@@ -195,7 +195,9 @@ export function createTodoAutocompleteExtension(plugin: any) {
   };
 
   return autocompletion({
-    override: [completionSource]
+    override: [completionSource],
+    activateOnTyping: true,
+    closeOnBlur: true
   });
 }
 

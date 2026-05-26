@@ -428,7 +428,9 @@ function createTodoAutocompleteExtension(plugin) {
     return result;
   };
   return (0, import_autocomplete.autocompletion)({
-    override: [completionSource]
+    override: [completionSource],
+    activateOnTyping: true,
+    closeOnBlur: true
   });
 }
 function createTodoPostProcessor(plugin) {
