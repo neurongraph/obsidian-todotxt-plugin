@@ -483,7 +483,7 @@ function createCustomAutocompletePlugin(plugin) {
         this.setupEventListeners();
       }
       setupEventListeners() {
-        this.view.dom.addEventListener("keydown", (e) => this.handleKeydown(e));
+        this.view.dom.addEventListener("keydown", (e) => this.handleKeydown(e), true);
         this.view.dom.addEventListener("click", () => this.closePopup());
       }
       update(update) {
@@ -594,9 +594,14 @@ function createCustomAutocompletePlugin(plugin) {
       handleKeydown(e) {
         if (!this.state.isOpen)
           return;
+        const handled = e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Escape";
+        if (!handled)
+          return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         switch (e.key) {
           case "ArrowDown":
-            e.preventDefault();
             this.state.selectedIndex = Math.min(
               this.state.selectedIndex + 1,
               this.state.suggestions.length - 1
@@ -604,19 +609,16 @@ function createCustomAutocompletePlugin(plugin) {
             this.updatePopupStyles();
             break;
           case "ArrowUp":
-            e.preventDefault();
             this.state.selectedIndex = Math.max(this.state.selectedIndex - 1, 0);
             this.updatePopupStyles();
             break;
           case "Enter":
-            e.preventDefault();
             this.selectSuggestion(
               this.view,
               this.state.suggestions[this.state.selectedIndex]
             );
             break;
           case "Escape":
-            e.preventDefault();
             this.closePopup();
             break;
         }
