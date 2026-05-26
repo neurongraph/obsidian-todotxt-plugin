@@ -522,7 +522,7 @@ function createCustomAutocompletePlugin(plugin) {
         this.state.selectedIndex = 0;
         this.state.startPos = line.from + match.index;
         this.state.endPos = cursor;
-        this.showPopup(update.view);
+        requestAnimationFrame(() => this.showPopup(update.view));
       }
       showPopup(view) {
         this.closePopup();

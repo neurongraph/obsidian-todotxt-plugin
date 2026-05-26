@@ -85,7 +85,8 @@ export function createCustomAutocompletePlugin(plugin: any) {
         this.state.startPos = line.from + match.index!;
         this.state.endPos = cursor;
 
-        this.showPopup(update.view);
+        // Defer popup showing to avoid "Reading editor layout during update" error
+        requestAnimationFrame(() => this.showPopup(update.view));
       }
 
       showPopup(view: EditorView) {
