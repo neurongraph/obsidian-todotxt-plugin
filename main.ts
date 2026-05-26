@@ -20,9 +20,9 @@ import {
 } from "./parser";
 import {
   createTodoHighlighterPlugin,
-  createTodoAutocompleteExtension,
   createTodoPostProcessor
 } from "./highlighter";
+import { createCustomAutocompletePlugin } from "./custom-autocomplete";
 
 interface TodoSettings {
   todoPath: string;
@@ -59,8 +59,8 @@ export default class TodoTxtPlugin extends Plugin {
     // 1. Register CodeMirror 6 syntax highlighter
     this.registerEditorExtension(createTodoHighlighterPlugin(this));
 
-    // TODO: Autocomplete extension disabled due to CodeMirror module conflict
-    // this.registerEditorExtension(createTodoAutocompleteExtension(this));
+    // 1b. Register custom autocomplete plugin
+    this.registerEditorExtension(createCustomAutocompletePlugin(this));
 
     // 2. Register Reading View Markdown Post-Processor
     this.registerMarkdownPostProcessor(createTodoPostProcessor(this));

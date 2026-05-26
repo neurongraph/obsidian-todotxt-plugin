@@ -1,8 +1,6 @@
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
-import { autocompletion } from "@codemirror/autocomplete";
 import { MarkdownPostProcessorContext } from "obsidian";
-import { createTodoCompletionSource } from "./autocomplete";
 
 /**
  * Creates a CodeMirror 6 ViewPlugin to provide live syntax highlighting in
@@ -159,44 +157,6 @@ export function createTodoHighlighterPlugin(plugin: any) {
       decorations: (v) => v.decorations,
     }
   );
-}
-
-/**
- * Creates a CodeMirror 6 autocomplete extension for contexts (@) and projects (+).
- */
-export function createTodoAutocompleteExtension(plugin: any) {
-  const completionSource = (context: any) => {
-    // Only provide completions for target todo files
-    const activeFile = plugin.app.workspace.getActiveFile();
-
-    if (!activeFile) {
-      console.log("[TodoAutocomplete] No active file");
-      return null;
-    }
-
-    const isTarget = plugin.isTargetFile(activeFile.path);
-    if (!isTarget) {
-      console.log(`[TodoAutocomplete] File not a target: ${activeFile.path}, configured: ${plugin.settings.todoPath}`);
-      return null;
-    }
-
-    // Get the current file content from the editor state
-    const content = context.state.doc.toString();
-
-    // Create the completion source with the current file content
-    const source = createTodoCompletionSource(() => content);
-    const result = source(context);
-
-    if (result) {
-      console.log(`[TodoAutocomplete] Showing ${result.options?.length || 0} completions`);
-    }
-
-    return result;
-  };
-
-  return autocompletion({
-    override: [completionSource]
-  });
 }
 
 /**
