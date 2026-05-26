@@ -1,6 +1,6 @@
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import { RangeSetBuilder } from "@codemirror/state";
-import { autocompletion, completionKeymap } from "@codemirror/autocomplete";
+import { autocompletion } from "@codemirror/autocomplete";
 import { MarkdownPostProcessorContext } from "obsidian";
 import { createTodoCompletionSource } from "./autocomplete";
 
@@ -194,13 +194,9 @@ export function createTodoAutocompleteExtension(plugin: any) {
     return result;
   };
 
-  return [
-    autocompletion({
-      override: [completionSource],
-      activateOnTyping: true
-    }),
-    completionKeymap
-  ];
+  return autocompletion({
+    override: [completionSource]
+  });
 }
 
 /**
