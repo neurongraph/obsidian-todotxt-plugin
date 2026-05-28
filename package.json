@@ -1,6 +1,6 @@
 {
   "name": "obsidian-todotxt-plugin",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Premium Todo.txt integration with recurrence, highlighting, and in-place sorting for Obsidian.",
   "main": "main.js",
   "scripts": {

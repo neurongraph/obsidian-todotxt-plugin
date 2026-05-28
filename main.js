@@ -642,6 +642,7 @@ var DEFAULT_SETTINGS = {
   todoPath: "todo.md",
   additionalPaths: "",
   archivePath: "completed_todo.md",
+  projectsPath: "",
   priorityColor: "#c17171",
   // Soft rose/red
   dueDateColor: "#e28743",
@@ -690,6 +691,11 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
       id: "todotxt-archive-completed",
       name: "Archive Completed Tasks",
       callback: () => this.archiveCompletedTasks()
+    });
+    this.addCommand({
+      id: "todotxt-create-project-folders",
+      name: "Create Project Folders from Todos",
+      callback: () => this.createProjectFolders()
     });
     this.registerEvent(
       this.app.vault.on("modify", async (file) => {
@@ -1008,6 +1014,65 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
       this.isWritingFile = false;
     }
   }
+  /**
+   * Scans all target todo files and creates <projectsPath>/<context>/<project>/<project>.md
+   * for every unique (context, project) pair found in incomplete tasks.
+   */
+  async createProjectFolders() {
+    const projectsPath = this.settings.projectsPath.trim();
+    if (!projectsPath) {
+      new import_obsidian.Notice("Configure a Projects Root Path in settings first!");
+      return;
+    }
+    const targetPaths = [
+      this.settings.todoPath,
+      ...this.settings.additionalPaths.split(",").map((p) => p.trim()).filter((p) => p.length > 0)
+    ];
+    const pairs = /* @__PURE__ */ new Set();
+    for (const path of targetPaths) {
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof import_obsidian.TFile))
+        continue;
+      const content = await this.app.vault.read(file);
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#") || trimmed === "---")
+          continue;
+        const task = parseTodoLine(line);
+        if (task.completed)
+          continue;
+        for (const context of task.contexts) {
+          for (const project of task.projects) {
+            pairs.add(`${context}|${project}`);
+          }
+        }
+      }
+    }
+    if (pairs.size === 0) {
+      new import_obsidian.Notice("No context + project pairs found in active todos!");
+      return;
+    }
+    let created = 0;
+    for (const pair of pairs) {
+      const [context, project] = pair.split("|");
+      const folderPath = `${projectsPath}/${context}/${project}`;
+      const filePath = `${folderPath}/${project}.md`;
+      await this.ensureFolder(projectsPath);
+      await this.ensureFolder(`${projectsPath}/${context}`);
+      await this.ensureFolder(folderPath);
+      if (!this.app.vault.getAbstractFileByPath(filePath)) {
+        await this.app.vault.create(filePath, `# ${project}
+`);
+        created++;
+      }
+    }
+    new import_obsidian.Notice(`Done! ${created} new project file(s) created across ${pairs.size} project(s).`);
+  }
+  async ensureFolder(folderPath) {
+    if (!this.app.vault.getAbstractFileByPath(folderPath)) {
+      await this.app.vault.createFolder(folderPath);
+    }
+  }
 };
 var TodoControlPanelModal = class extends import_obsidian.Modal {
   constructor(app, plugin) {
@@ -1086,6 +1151,16 @@ var TodoSettingTab = class extends import_obsidian.PluginSettingTab {
         this.plugin.settings.archivePath = value;
         await this.plugin.saveSettings();
       })
+    );
+    containerEl.createEl("h3", { text: "Project Folders" });
+    new import_obsidian.Setting(containerEl).setName("Projects Root Path").setDesc("Root folder (relative to vault) for auto-created project subfolders. Structure: <path>/<context>/<project>/<project>.md").addText(
+      (text) => text.setPlaceholder("Projects").setValue(this.plugin.settings.projectsPath).onChange(async (value) => {
+        this.plugin.settings.projectsPath = value;
+        await this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian.Setting(containerEl).setName("Create Project Folders").setDesc("Scan all todo files and create a <context>/<project>/<project>.md folder for every unique pair found in active tasks.").addButton(
+      (btn) => btn.setButtonText("Create Now").setCta().onClick(() => this.plugin.createProjectFolders())
     );
     containerEl.createEl("h3", { text: "Syntax Highlighting & Color Coding" });
     containerEl.createEl("p", {
