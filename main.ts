@@ -460,10 +460,20 @@ export default class TodoTxtPlugin extends Plugin {
     for (let i = inboxLines; i < lines.length; i++) {
       const line = lines[i];
       const trimmed = line.trim();
-      if (trimmed.length === 0) continue;
+      const prev = uncompletedTasks[uncompletedTasks.length - 1];
+
+      // Keep blank lines (collapsed) so markdown structure survives
+      if (trimmed.length === 0) {
+        if (prev !== undefined && prev.trim().length > 0) uncompletedTasks.push("");
+        continue;
+      }
 
       // If it is a header or divider, keep it in the active file
       if (trimmed.startsWith("#") || trimmed === "---") {
+        // "---" directly after text becomes a setext heading, so it needs a blank line before it
+        if (trimmed === "---" && prev !== undefined && prev.trim().length > 0) {
+          uncompletedTasks.push("");
+        }
         uncompletedTasks.push(line);
         continue;
       }
@@ -508,9 +518,9 @@ export default class TodoTxtPlugin extends Plugin {
 
       // Write remaining back to active file with 3 blank lines at the top
       const inboxPrefix = "\n\n\n";
-      const updatedActiveContent = inboxPrefix + uncompletedTasks.join("\n");
+      const updatedActiveContent = inboxPrefix + uncompletedTasks.join("\n").replace(/\s+$/, "") + "\n";
       await this.app.vault.modify(file, updatedActiveContent);
-      this.fileCache[file.path] = uncompletedTasks;
+      this.fileCache[file.path] = updatedActiveContent.split(/\r?\n/);
 
       new Notice(`Archived ${completedTasks.length} task(s) to ${archivePath}!`);
     } catch (err) {

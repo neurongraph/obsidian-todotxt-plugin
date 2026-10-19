@@ -966,9 +966,16 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
     for (let i = inboxLines; i < lines.length; i++) {
       const line = lines[i];
       const trimmed = line.trim();
-      if (trimmed.length === 0)
+      const prev = uncompletedTasks[uncompletedTasks.length - 1];
+      if (trimmed.length === 0) {
+        if (prev !== void 0 && prev.trim().length > 0)
+          uncompletedTasks.push("");
         continue;
+      }
       if (trimmed.startsWith("#") || trimmed === "---") {
+        if (trimmed === "---" && prev !== void 0 && prev.trim().length > 0) {
+          uncompletedTasks.push("");
+        }
         uncompletedTasks.push(line);
         continue;
       }
@@ -1003,9 +1010,9 @@ var TodoTxtPlugin = class extends import_obsidian.Plugin {
         await this.app.vault.create(archivePath, updatedArchiveContent);
       }
       const inboxPrefix = "\n\n\n";
-      const updatedActiveContent = inboxPrefix + uncompletedTasks.join("\n");
+      const updatedActiveContent = inboxPrefix + uncompletedTasks.join("\n").replace(/\s+$/, "") + "\n";
       await this.app.vault.modify(file, updatedActiveContent);
-      this.fileCache[file.path] = uncompletedTasks;
+      this.fileCache[file.path] = updatedActiveContent.split(/\r?\n/);
       new import_obsidian.Notice(`Archived ${completedTasks.length} task(s) to ${archivePath}!`);
     } catch (err) {
       new import_obsidian.Notice("Failed to archive tasks!");
